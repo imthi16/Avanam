@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log*
+
+# Python
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+htmlcov
+venv
+.venv
+
+# Data (will be mounted as volumes)
+backend/data/uploads/*
+backend/data/faiss_index/*
+backend/data/*.db
+
+# IDE
+.vscode
+.idea
+
+# CI
+.github
+
+# Docs
+*.md
+!README.md
+
+# OS
+.DS_Store
+Thumbs.db
