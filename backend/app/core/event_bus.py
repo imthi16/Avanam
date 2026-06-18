@@ -59,7 +59,7 @@ class EventBus:
                     async for message in pubsub.listen():
                         if message["type"] == "message":
                             data = message["data"]
-                            yield f"data: {data}\n\n"
+                            yield data
 
                             # Check for terminal events
                             try:
@@ -85,7 +85,7 @@ class EventBus:
             self._subscribed.set()
             while True:
                 event = await self._queue.get()
-                yield f"data: {json.dumps(event)}\n\n"
+                yield json.dumps(event)
                 if event.get("event") == "pipeline_complete" or (
                     event.get("agent") == "pipeline"
                     and event.get("status") in ["complete", "error"]

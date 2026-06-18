@@ -16,8 +16,6 @@ def formatter_node(state: PipelineState) -> dict:
     try:
         llm = get_llm(temperature=0.2)
         
-        sources_list = "\n".join([f"[{i+1}] {c['metadata'].get('source', 'Unknown Document')}" for i, c in enumerate(chunks)])
-        
         prompt = f"""
         You are a formatter. Format the final response for the user based on the approved analysis.
         
@@ -26,11 +24,6 @@ def formatter_node(state: PipelineState) -> dict:
         
         Critique Notes:
         {critique}
-        
-        Confidence Score: {confidence_score}
-        
-        Sources Available:
-        {sources_list}
         
         Instructions:
         Provide a clean markdown response structured as follows:
@@ -41,9 +34,7 @@ def formatter_node(state: PipelineState) -> dict:
         ### Detailed Analysis
         (The main analysis, ensuring inline citations like [1] or [2] are preserved)
         
-        ### Sources
-        (A numbered list of the sources used, formatted cleanly)
-        
+        Do NOT add a "Sources" or "References" section at the end.
         Return ONLY the formatted markdown text.
         """
         

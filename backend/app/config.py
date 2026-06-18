@@ -2,11 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 class Settings(BaseSettings):
-    LLM_PROVIDER: str = "gemini" # Options: gemini, groq, ollama
-    GOOGLE_API_KEY: str = "your-key"
-    GROQ_API_KEY: str = ""
     OLLAMA_BASE_URL: str = "http://ollama:11434"
-    LLM_MODEL: str = "gemini-2.0-flash"
+    LLM_MODEL: str = "llama3.2:3b"  # Lightweight model for document analysis via Ollama
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50

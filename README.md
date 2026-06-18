@@ -17,7 +17,7 @@
 
 Built as a demonstration of modern AI engineering, Avanam features a **live-streaming agent visualization UI**, allowing users to watch AI agents collaborate, debate, and revise their work in real-time. 
 
-**The best part?** The entire stack is architected to run at **$0 cost** in production, utilizing the Google Gemini API free tier, local HuggingFace embeddings, and SQLite.
+**The best part?** The entire stack is architected to run **100% locally at $0 cost** with **zero cloud dependencies**, utilizing **Ollama** with `llama3:8b` for LLM inference, local HuggingFace embeddings, and PostgreSQL.
 
 ## ✨ Key Features
 
@@ -75,10 +75,10 @@ graph TD
 ### Backend
 * **Framework:** FastAPI, Uvicorn
 * **AI Orchestration:** LangGraph, LangChain
-* **LLM:** Google Gemini (`gemini-2.0-flash` free tier)
+* **LLM:** Ollama (`llama3:8b` — best for document analysis, runs fully local)
 * **Embeddings:** HuggingFace `all-MiniLM-L6-v2`
 * **Vector Store:** FAISS (CPU)
-* **Database & ORM:** SQLite, SQLAlchemy (`aiosqlite`)
+* **Database & ORM:** PostgreSQL, SQLAlchemy (`asyncpg`)
 * **Streaming:** Server-Sent Events (`sse-starlette`)
 
 ### Frontend
@@ -99,7 +99,8 @@ graph TD
 
 ### Prerequisites
 * [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-* A free [Google AI Studio API Key](https://aistudio.google.com/)
+* At least **8GB RAM** available for the Ollama LLM model
+* No API keys needed — everything runs locally!
 
 ### Installation
 
@@ -114,17 +115,14 @@ graph TD
    ```bash
    cp backend/.env.example backend/.env
    ```
-   Open `backend/.env` and add your Gemini API key:
-   ```env
-   GOOGLE_API_KEY=your_actual_api_key_here
-   ```
+   The default config works out-of-the-box — no API keys required!
 
 3. **Start the Application**
    Spin up the entire stack using Docker Compose:
    ```bash
    docker-compose up --build
    ```
-   *(Note: The first run may take a few minutes as it downloads the HuggingFace embedding model locally).*
+   *(Note: The first run will automatically pull the `llama3:8b` model (~4.7GB) and the HuggingFace embedding model. This may take several minutes depending on your internet speed.)*
 
 4. **Access the Platform**
    * **Frontend UI:** [http://localhost:3000](http://localhost:3000)

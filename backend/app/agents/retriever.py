@@ -17,7 +17,7 @@ def retriever_node(state: PipelineState) -> dict:
     events = [create_event("retriever", "running", "Searching FAISS index", 10)]
     
     try:
-        results = vector_store_service.similarity_search(query, k=5)
+        results = vector_store_service.similarity_search(query, k=3)
         events.append(create_event("retriever", "running", "Ranking results", 50))
         
         chunks = []
