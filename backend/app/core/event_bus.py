@@ -39,7 +39,9 @@ class EventBus:
                 await self._redis.publish(self._channel, event_json)
                 return
             except Exception as e:
-                logger.warning("Redis publish failed, using queue fallback", error=str(e))
+                logger.warning(
+                    "Redis publish failed, using queue fallback", error=str(e)
+                )
                 if self._queue is None:
                     self._queue = asyncio.Queue()
 
@@ -76,7 +78,9 @@ class EventBus:
                     await pubsub.aclose()
                 return
             except Exception as e:
-                logger.warning("Redis subscribe failed, using queue fallback", error=str(e))
+                logger.warning(
+                    "Redis subscribe failed, using queue fallback", error=str(e)
+                )
                 if self._queue is None:
                     self._queue = asyncio.Queue()
 

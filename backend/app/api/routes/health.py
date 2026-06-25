@@ -31,7 +31,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         version="1.0.0",
         faiss_vectors=vs_stats["vector_count"],
         documents_count=doc_count,
-        uptime=time.time() - start_time
+        uptime=time.time() - start_time,
     )
 
     # Cache for 30 seconds
@@ -49,18 +49,20 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(func.count(Document.id)))
     doc_count = result.scalar() or 0
 
-    qh_result = await db.execute(select(
-        func.count(QueryHistory.id),
-        func.avg(QueryHistory.total_duration),
-        func.avg(QueryHistory.confidence_score)
-    ))
+    qh_result = await db.execute(
+        select(
+            func.count(QueryHistory.id),
+            func.avg(QueryHistory.total_duration),
+            func.avg(QueryHistory.confidence_score),
+        )
+    )
     row = qh_result.first()
 
     response = StatsResponse(
         total_queries=row[0] or 0,
         avg_response_time=row[1] or 0.0,
         avg_confidence=row[2] or 0.0,
-        documents_indexed=doc_count
+        documents_indexed=doc_count,
     )
 
     # Cache for 30 seconds

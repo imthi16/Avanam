@@ -1,3 +1,4 @@
+import asyncio
 import os
 from io import BytesIO
 from pypdf import PdfReader
@@ -34,17 +35,24 @@ def chunk_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", " ", ""]
+        separators=["\n\n", "\n", " ", ""],
     )
     return splitter.split_text(text)
 
 
-async def process_document(file_bytes: bytes, filename: str, file_type: str, db_session) -> Document:
-    # 1. Parse
-    text = parse_file(file_bytes, filename)
+async def process_document(
+    file_bytes: bytes, filename: str, file_type: str, db_session
+) -> Document:
+    # 1. Parse (CPU-bound; keep the event loop free)
+    text = await asyncio.to_thread(parse_file, file_bytes, filename)
 
     # 2. Chunk
-    chunks = chunk_text(text, settings.CHUNK_SIZE, settings.CHUNK_OVERLAP)
+    chunks = await asyncio.to_thread(
+        chunk_text, text, settings.CHUNK_SIZE, settings.CHUNK_OVERLAP
+    )
+
+    if not chunks:
+        raise ValueError("No extractable text found in the uploaded file.")
 
     # 3. Create DB record
     db_doc = Document(
@@ -52,15 +60,20 @@ async def process_document(file_bytes: bytes, filename: str, file_type: str, db_
         file_type=file_type,
         file_size=len(file_bytes),
         chunk_count=len(chunks),
-        status="indexing"
+        status="indexing",
     )
     db_session.add(db_doc)
     await db_session.commit()
     await db_session.refresh(db_doc)
 
-    # 4. Store in FAISS
-    metadatas = [{"doc_id": db_doc.id, "chunk_index": i, "source": filename} for i in range(len(chunks))]
-    vector_store_service.add_documents(chunks, metadatas, db_doc.id)
+    # 4. Store in FAISS (embedding is CPU/GPU heavy — run off the event loop)
+    metadatas = [
+        {"doc_id": db_doc.id, "chunk_index": i, "source": filename}
+        for i in range(len(chunks))
+    ]
+    await asyncio.to_thread(
+        vector_store_service.add_documents, chunks, metadatas, db_doc.id
+    )
 
     # 5. Update DB record
     db_doc.status = "indexed"

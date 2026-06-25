@@ -1,15 +1,16 @@
 from pydantic import BaseModel
-from typing import List, Optional, Any, Dict
-from datetime import datetime
+from typing import List, Any, Dict
 
 
 # --- Request Schemas ---
+
 
 class QueryRequest(BaseModel):
     query: str
 
 
 # --- SSE Event Schema (not a DB model) ---
+
 
 class AgentEvent(BaseModel):
     agent: str
@@ -21,6 +22,7 @@ class AgentEvent(BaseModel):
 
 
 # --- Response Schemas (non-DB) ---
+
 
 class Citation(BaseModel):
     index: int
