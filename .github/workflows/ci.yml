@@ -64,12 +64,10 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://avanam:avanam@localhost:5432/avanam_test
           REDIS_URL: redis://localhost:6379/0
-          GOOGLE_API_KEY: test-key
 
       - name: Run tests
         run: pytest tests/ -v --tb=short
         env:
-          GOOGLE_API_KEY: test-key
           DATABASE_URL: postgresql+asyncpg://avanam:avanam@localhost:5432/avanam_test
           REDIS_URL: redis://localhost:6379/0
 

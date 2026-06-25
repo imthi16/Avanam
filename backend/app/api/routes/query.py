@@ -2,7 +2,7 @@ import asyncio
 from fastapi import APIRouter, Depends, Request
 from sse_starlette.sse import EventSourceResponse
 from app.core.database import get_db, async_session_factory
-from app.models.schemas import QueryRequest, QueryResponse
+from app.models.schemas import QueryRequest
 from app.models.database import QueryHistory, AgentRun
 from app.agents.pipeline import run_pipeline
 from app.core.event_bus import EventBus
@@ -18,7 +18,7 @@ async def submit_query(request: Request, body: QueryRequest):
     async def background_task():
         # Wait for the SSE client to connect and subscribe to Redis
         await event_bus.wait_for_subscriber()
-        
+
         # Run pipeline
         final_state = await run_pipeline(body.query, event_bus)
 
@@ -30,7 +30,7 @@ async def submit_query(request: Request, body: QueryRequest):
                     response=final_state.get("final_response", ""),
                     confidence_score=final_state.get("confidence_score", 0.0),
                     revision_count=final_state.get("revision_count", 0),
-                    total_duration=0  # Should be calculated
+                    total_duration=0,  # Should be calculated
                 )
                 db.add(qh)
                 await db.commit()
@@ -43,7 +43,7 @@ async def submit_query(request: Request, body: QueryRequest):
                             agent_name=event.get("agent", "unknown"),
                             status=event.get("status", "unknown"),
                             duration_ms=0,
-                            output_summary=str(event.get("data", {}))
+                            output_summary=str(event.get("data", {})),
                         )
                         db.add(ar)
                 await db.commit()
@@ -56,5 +56,7 @@ async def submit_query(request: Request, body: QueryRequest):
 
 @router.get("/history")
 async def get_query_history(db=Depends(get_db)):
-    result = await db.execute(select(QueryHistory).order_by(QueryHistory.created_at.desc()))
+    result = await db.execute(
+        select(QueryHistory).order_by(QueryHistory.created_at.desc())
+    )
     return result.scalars().all()

@@ -1,12 +1,17 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
+
 class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://ollama:11434"
     LLM_MODEL: str = "llama3.2:3b"  # Lightweight model for document analysis via Ollama
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
+    # Retrieval tuning
+    RETRIEVAL_K: int = 5  # number of chunks to feed the analyst
+    # drop chunks below this cosine similarity (0.0-1.0)
+    RETRIEVAL_SCORE_THRESHOLD: float = 0.2
     FAISS_INDEX_PATH: str = "./data/faiss_index"
     UPLOAD_DIR: str = "./data/uploads"
     DATABASE_URL: str = "postgresql+asyncpg://avanam:avanam@localhost:5432/avanam"
@@ -15,7 +20,10 @@ class Settings(BaseSettings):
     MAX_REVISION_LOOPS: int = 2
     LOG_LEVEL: str = "INFO"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
 
 @lru_cache()
 def get_settings():
