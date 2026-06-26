@@ -113,6 +113,24 @@ class VectorStoreService:
             "Deleted document from index", doc_id=doc_id, chunks=len(ids_to_delete)
         )
 
+    def get_chunks_by_doc_id(self, doc_id: str) -> list[dict]:
+        """Return every stored chunk for a document, ordered by chunk index."""
+        with self._lock:
+            if self.vectorstore is None:
+                return []
+            chunks = [
+                {
+                    "index": doc.metadata.get("chunk_index", 0),
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                    "char_count": len(doc.page_content),
+                }
+                for doc in self.vectorstore.docstore._dict.values()
+                if str(doc.metadata.get("doc_id")) == str(doc_id)
+            ]
+        chunks.sort(key=lambda c: c["index"])
+        return chunks
+
     def _save_locked(self):
         """Persist the index. Caller must already hold ``self._lock``."""
         if self.vectorstore is not None and self.index_path:

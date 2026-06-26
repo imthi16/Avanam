@@ -15,5 +15,6 @@ class PipelineState(TypedDict):
     needs_revision: bool
     final_response: str
     citations: List[Dict]  # {index, source, content}
+    total_duration: float  # end-to-end pipeline wall-clock seconds
     events: Annotated[List[Dict], operator.add]  # Append-only event stream
     error: str

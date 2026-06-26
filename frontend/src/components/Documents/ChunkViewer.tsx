@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Chunk } from '../../types';
+import { api } from '../../services/api';
 
 interface Props {
   documentId: string;
@@ -10,17 +11,27 @@ const ChunkViewer: React.FC<Props> = ({ documentId }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // We would fetch actual chunks here if the endpoint returned them.
-    // Since our MVP endpoint returns an empty array, we'll simulate a couple chunks for demo purposes
-    // in the real app this would be: api.getChunks(documentId).then(...)
-    
-    setTimeout(() => {
-      setChunks([
-        { index: 0, content: "This is a simulated chunk of text from the document. In a full implementation, this would show the exact text extracted from the file, embedded, and stored in FAISS.", metadata: { source: "Simulated" }, char_count: 165 },
-        { index: 1, content: "Another simulated chunk. This helps visualize how the document was split into overlapping segments to preserve context for the RAG pipeline.", metadata: { source: "Simulated" }, char_count: 140 }
-      ]);
-      setLoading(false);
-    }, 500);
+    let active = true;
+    setLoading(true);
+
+    api.getChunks(documentId)
+      .then((data) => {
+        if (active) {
+          setChunks(data);
+          setLoading(false);
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+        if (active) {
+          setChunks([]);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [documentId]);
 
   if (loading) {

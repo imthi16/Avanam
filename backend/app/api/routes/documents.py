@@ -1,8 +1,10 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from app.core.database import get_db
-from app.models.schemas import DocumentListResponse
+from app.models.schemas import DocumentListResponse, ChunkResponse
 from app.models.database import Document
 from app.services.document_service import process_document
 from app.services.vectorstore_service import vector_store_service
@@ -51,8 +53,8 @@ async def delete_document(doc_id: str, db: AsyncSession = Depends(get_db)):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Delete from FAISS
-    vector_store_service.delete_by_doc_id(doc_id)
+    # Delete from FAISS (blocking index rewrite — keep off the event loop)
+    await asyncio.to_thread(vector_store_service.delete_by_doc_id, doc_id)
 
     # Delete from DB
     await db.delete(doc)
@@ -61,6 +63,10 @@ async def delete_document(doc_id: str, db: AsyncSession = Depends(get_db)):
     return {"status": "deleted"}
 
 
-@router.get("/{doc_id}/chunks")
-async def get_document_chunks(doc_id: str):
-    return []
+@router.get("/{doc_id}/chunks", response_model=list[ChunkResponse])
+async def get_document_chunks(doc_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Document).where(Document.id == doc_id))
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    return await asyncio.to_thread(vector_store_service.get_chunks_by_doc_id, doc_id)

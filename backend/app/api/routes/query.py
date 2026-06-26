@@ -4,7 +4,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.core.database import get_db, async_session_factory
 from app.models.schemas import QueryRequest
 from app.models.database import QueryHistory, AgentRun
-from app.agents.pipeline import run_pipeline
+from app.agents.pipeline import run_pipeline, agent_durations_ms
 from app.core.event_bus import EventBus
 from sqlmodel import select
 
@@ -30,19 +30,22 @@ async def submit_query(request: Request, body: QueryRequest):
                     response=final_state.get("final_response", ""),
                     confidence_score=final_state.get("confidence_score", 0.0),
                     revision_count=final_state.get("revision_count", 0),
-                    total_duration=0,  # Should be calculated
+                    total_duration=final_state.get("total_duration", 0.0),
                 )
                 db.add(qh)
                 await db.commit()
                 await db.refresh(qh)
 
-                for event in final_state.get("events", []):
+                events = final_state.get("events", [])
+                durations = agent_durations_ms(events)
+                for event in events:
                     if event.get("status") in ["complete", "error", "revision"]:
+                        agent_name = event.get("agent", "unknown")
                         ar = AgentRun(
                             query_history_id=qh.id,
-                            agent_name=event.get("agent", "unknown"),
+                            agent_name=agent_name,
                             status=event.get("status", "unknown"),
-                            duration_ms=0,
+                            duration_ms=durations.get(agent_name, 0.0),
                             output_summary=str(event.get("data", {})),
                         )
                         db.add(ar)

@@ -6,7 +6,27 @@ from app.agents.critic import critic_node
 from app.agents.formatter import formatter_node
 from app.agents.router import router_node
 from app.core.event_bus import EventBus
+from datetime import datetime
 import time
+
+
+def agent_durations_ms(events: list[dict]) -> dict[str, float]:
+    """Wall-clock duration per agent, derived from emitted event timestamps."""
+    spans: dict[str, list[datetime]] = {}
+    for e in events:
+        agent = e.get("agent")
+        ts = e.get("timestamp")
+        if not agent or not ts:
+            continue
+        try:
+            parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        spans.setdefault(agent, []).append(parsed)
+    return {
+        agent: (max(stamps) - min(stamps)).total_seconds() * 1000.0
+        for agent, stamps in spans.items()
+    }
 
 
 def should_revise(state: PipelineState) -> str:
@@ -58,9 +78,8 @@ async def run_pipeline(query: str, event_bus: EventBus) -> PipelineState:
 
     start_time = time.time()
 
-    # REVISED PIPELINE EXECUTION TO SUPPORT REAL-TIME EMITS
-    # Since nodes are synchronous functions in our setup, they can't await event_bus.emit.
-    # Therefore, they return events in the state update, and we process them here.
+    # Stream the graph: nodes return their events in the state update, and we
+    # relay them to the SSE event bus here as they arrive.
 
     try:
         current_state = initial_state
@@ -80,6 +99,7 @@ async def run_pipeline(query: str, event_bus: EventBus) -> PipelineState:
 
         # Emit final complete event
         duration = time.time() - start_time
+        current_state["total_duration"] = duration
 
         if current_state.get("error"):
             await event_bus.emit(
@@ -118,6 +138,7 @@ async def run_pipeline(query: str, event_bus: EventBus) -> PipelineState:
             )
         return current_state
     except Exception as e:
+        current_state["total_duration"] = time.time() - start_time
         await event_bus.emit(
             create_event("pipeline", "error", "Pipeline failed", 100, {"error": str(e)})
         )
